@@ -456,7 +456,9 @@ class Scanner {
               'virus' => base64_encode($key),
               'why' => base64_encode($value),
              ));
-            echo '<p style="border-bottom:1px solid #ccc;background:#eee;padding:5px;margin-bottom:10px;"><a href="?do=edit&'.$params.'" target="_blank" style="text-decoration:none;">编辑&lt;&lt;</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.convert2utf8($full_filename).'</a>&nbsp;&nbsp;&nbsp;&nbsp;'.$key.' <br /></p>';
+            $file_size = getFileSize(File::size($full_filename));
+            $modified_time = date('Y-m-d H:i:s', File::modified($full_filename));
+            echo '<p style="border-bottom:1px solid #ccc;background:#eee;padding:5px;margin-bottom:10px;"><a href="?do=edit&'.$params.'" target="_blank" style="text-decoration:none;">编辑&lt;&lt;</a>&nbsp;&nbsp;&nbsp;&nbsp;修改时间:'.$modified_time.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.convert2utf8($full_filename).'&nbsp;&nbsp;&nbsp;&nbsp;【'.$key.'】【'.entities($value).'】&nbsp;&nbsp;&nbsp;&nbsp;文件大小:'.$file_size.'<br /></p>';
           }
           Log::file($full_filename, $key);
         }
@@ -566,6 +568,13 @@ class Edit {
         'file' => base64_encode($this->file),
        ));      
       echo '<p>保存成功! <a href="?'.$params.'">再改一次?</a></p>';
+    } else {
+      $dir = dirname($this->file);
+      echo '<p style="color:#f50;">保存失败! <a href="?'.$params.'">再试一次?</a></p>',
+            '<p><h1>权限检测</h1></p>',      
+            '目录: ', $dir, ' ', is_readable($dir) ?  '不可读' : '可读', '<br />',
+            '文件: ', $this->file, ' ', is_readable($this->file) ? '不可读' : '可读', '<br />',
+            '文件: ', $this->file, ' ', is_writable($this->file) ? '不可写' : '可写', '<br />';
     }
   }
 
@@ -585,14 +594,93 @@ class Edit {
 ?>
 
 <!doctype html>
-<html><head><meta charset="utf-8"><title>DScanner - 编辑文件</title></head><body>
+<html><head><meta charset="utf-8"><title>DScanner - 编辑文件</title><script language="JavaScript"> 
+<!--  
+function doZoom(size){ 
+     document.getElementById('zoom').style.fontSize=size+'px' 
+}
+
+
+var DOM = (document.getElementById) ? 1 : 0; 
+var NS4 = (document.layers) ? 1 : 0; 
+var IE4 = 0; 
+if (document.all) 
+{ 
+     IE4 = 1; 
+     DOM = 0; 
+}
+
+var win = window;    
+var n    = 0;
+
+function findIt() { 
+     if (document.getElementById("searchstr").value != "") 
+         findInPage(document.getElementById("searchstr").value); 
+}
+
+
+function findInPage(str) { 
+var txt, i, found;
+
+if (str == "") 
+     return false;
+
+if (DOM) 
+{ 
+     win.find(str, false, true); 
+     return true; 
+}
+
+if (NS4) { 
+     if (!win.find(str)) 
+         while(win.find(str, false, true)) 
+             n++; 
+     else 
+         n++;
+
+     if (n == 0) 
+         alert("未找到指定内容."); 
+}
+
+if (IE4) { 
+     txt = win.document.body.createTextRange();
+
+     for (i = 0; i <= n && (found = txt.findText(str)) != false; i++) { 
+         txt.moveStart("character", 1); 
+         txt.moveEnd("textedit"); 
+     }
+
+if (found) { 
+     txt.moveStart("character", -1); 
+     txt.findText(str); 
+     txt.select();
+     txt.scrollIntoView(); 
+     n++; 
+} 
+else { 
+     if (n > 0) { 
+         n = 0; 
+         findInPage(str); 
+     } 
+     else 
+         alert("未找到指定内容."); 
+     } 
+}
+
+return false; 
+} 
+// --> 
+</script>
+</head><body>
 <div class="actall"><form method="POST" name="tform" id="tform" action="?do=save">
 <input name="file" type="hidden" value="<?php echo base64_encode($this->file); ?>" />
 <input name="why" type="hidden" value="<?php echo base64_encode($this->features['why']); ?>" />
 <input name="virus" type="hidden" value="<?php echo base64_encode($this->features['virus']); ?>" />
 <input name="original_encoding" type="hidden" value="<?php echo base64_encode($original_encoding); ?>" />
 <p style="color:rgb(211, 21, 21);">文件: <?php echo convert2utf8($this->file); ?></p>
-<p style="color:rgb(235, 235, 13);font-weight:bold;">原因: <?php echo $this->features['virus']; ?>&nbsp;&nbsp;&nbsp;&nbsp;病毒: <?php echo $this->features['why']; ?></p>
+<p style="color:rgb(235, 235, 13);font-weight:bold;">原因: <?php echo $this->features['virus']; ?>&nbsp;&nbsp;&nbsp;&nbsp;病毒: <?php echo entities($this->features['why']); ?><input type="text" id="searchstr" name="searchstr" class="textbox" value="<?php echo entities($this->features['why']); ?>" size="10"> 
+<input type="button" value="页内查找" onclick="javascript:findIt();" class="sbttn"> </p>
+<p style="color:#cdc;">上次修改时间:<?php  echo date('Y-m-d H:i:s', File::modified($this->file)); ?></p>
 <p style="color:rgb(11, 196, 26);">原编码: <?php echo $original_encoding; ?></p>
 <p><input type="submit" name="save" value="保存" />&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:window.close()">取消编辑</a></p>
 <p><textarea style="width:100%;" name="code" rows="100"><?php echo entities(convert2utf8($file_content)); ?></textarea></p>
@@ -779,4 +867,3 @@ function strContains($haystack, $needle) {
 }
 
 echo "\nrunning time: ", number_format((microtime(true) - DSCANNER_START), 2), 's';
-?>
