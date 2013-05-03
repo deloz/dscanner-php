@@ -263,7 +263,7 @@ header('Content-type:text/html; charset='.ENCODING);
 
 session_start();
 
-$scan_path = Request::get('sp') ? Request::get('sp') : $scan_path;
+$scan_path = Request::get('sp') ? Request::get('sp') : (empty($scan_path) ? __DIR__ : $scan_path;
 
 /********************************HTML START*******************/
 $request_do = Request::get('do');
