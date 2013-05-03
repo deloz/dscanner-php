@@ -263,7 +263,7 @@ header('Content-type:text/html; charset='.ENCODING);
 
 session_start();
 
-$scan_path = Request::get('sp') ? Request::get('sp') : (empty($scan_path) ? __DIR__ : $scan_path;
+$scan_path = Request::get('sp') ? Request::get('sp') : (empty($scan_path) ? __DIR__ : $scan_path);
 
 /********************************HTML START*******************/
 $request_do = Request::get('do');
@@ -512,7 +512,7 @@ class Scanner {
              ));
             $file_size = getFileSize(File::size($full_filename));
             $modified_time = date('Y-m-d H:i:s', File::modified($full_filename));
-            echo '<p style="border-bottom:1px solid #ccc;background:#eee;padding:5px;margin-bottom:10px;"><a href="?do=edit&'.$params.'" target="_blank" style="text-decoration:none;">编辑&lt;&lt;</a>&nbsp;&nbsp;&nbsp;&nbsp;修改时间:'.$modified_time.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.convert2utf8($full_filename).'&nbsp;&nbsp;&nbsp;&nbsp;【'.$key.'】【'.entities($value).'】&nbsp;&nbsp;&nbsp;&nbsp;文件大小:'.$file_size.'<br /></p>';
+            echo '<p style="border-bottom:1px solid #ccc;background:#eee;padding:5px;margin-bottom:10px;"><a href="?do=edit&'.$params.'" target="_blank" style="text-decoration:none;">编辑&lt;&lt;</a>&nbsp;&nbsp;&nbsp;&nbsp;权限:'.substr(sprintf('%o', fileperms($full_filename)), -4).'&nbsp;&nbsp;&nbsp;&nbsp;修改时间:'.$modified_time.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.convert2utf8($full_filename).'&nbsp;&nbsp;&nbsp;&nbsp;【'.$key.'】【'.entities($value).'】&nbsp;&nbsp;&nbsp;&nbsp;文件大小:'.$file_size.'<br /></p>';
           }
           Log::file($full_filename, $key);
         }
