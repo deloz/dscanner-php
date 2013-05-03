@@ -48,6 +48,28 @@ $debug = true;
 
 /*
 |----------------------------------------------------------------
+| 登录用户名:
+|----------------------------------------------------------------
+|
+| true 或者 false
+|
+*/
+
+$user = 'admin';
+
+/*
+|----------------------------------------------------------------
+| 登录密码:
+|----------------------------------------------------------------
+|
+| true 或者 false
+|
+*/
+
+$password = 'admin';
+
+/*
+|----------------------------------------------------------------
 | 扫描深度:max_depth
 |----------------------------------------------------------------
 |
@@ -236,15 +258,50 @@ $encoding = 'UTF-8';
 
 define('DSCANNER_START', microtime(true));
 define('ENCODING', $encoding);
+define('USER', $user);
+define('PASSWORD', $password);
 define('MB_STRING', (int) function_exists('mb_get_info'));
 !defined(__DIR__) and define('__DIR__', dirname(__FILE__));
 !defined('DS') and define('DS', DIRECTORY_SEPARATOR);
 header('Content-type:text/html; charset='.ENCODING);
 
+session_start();
+
 $scan_path = Request::get('sp') ? Request::get('sp') : $scan_path;
 
 /********************************HTML START*******************/
 $request_do = Request::get('do');
+if ($request_do === 'logout') {
+  Auth::logout();
+  header('Location: dscanner.php');
+  exit;
+}
+if (!Auth::check()) {
+  if ($request_do !== 'login') {
+    header('Location: dscanner.php?do=login');
+    exit;
+  } else {
+  $request_name = Request::get('name');
+  $request_password = Request::get('password');
+
+  if ($request_do === 'login' && $request_name && $request_password) {
+    if (Auth::login($request_name, $request_password)) {
+      header('Location: dscanner.php');
+      exit;
+    } else {
+      echo '<p style="color:#f50;">user or password wrong.</p>';
+    }
+  }
+?>
+  <form method="POST" action="dscanner.php?do=login">
+    <p>user:<input type="text" name="name" value=""></p>
+    <p>password: <input type="password" name="password" value=""></p>
+    <p><input type="submit" value="login"></p>
+  </form>
+<?php
+  exit;
+  }
+}
 if (Request::cli()) {
   echo "\n++++++++++++++++++++WELCOME TO USE DSCANNER++++++++++++++++++++\n",
        "\n                   USEAGE:      writing....                    \n",
@@ -256,7 +313,8 @@ if (Request::cli()) {
 <html><head><meta charset="utf-8"><title>DScanner - 扫描</title></head><body>
 <?php $type = Request::get('st'); ?>
 <div class="actall" style="height:100px;"><form method="POST" name="tform" id="tform" action="?do=scan">
-  <p>【<?php echo $_SERVER['REMOTE_ADDR'];?>】【<?php echo PHP_OS,': ',  $_SERVER["SERVER_SOFTWARE"]; ?>】</p>
+
+  <p>【<?php echo $_SERVER['REMOTE_ADDR'];?>】【<?php echo PHP_OS,': ',  $_SERVER["SERVER_SOFTWARE"]; ?>】&nbsp;&nbsp;&nbsp;<a href="?do=logout">退出登录</a></p>
 <p>路径 <input type="text" name="sp" id="sp" value="<?php echo $scan_path; ?>" style="width:300px;"></p>
 <p>扫描选项
 <select name="st">
@@ -524,6 +582,29 @@ class Request {
       $edit = new Edit($file, $options);
       $edit->run($do);
     }
+  }
+}
+
+class Auth {
+  public static function login($user, $password)
+  {
+    if ($user === USER && $password === PASSWORD) {
+      $_SESSION['logined'] = true;
+      return true;
+    } else {
+      $_SESSION['logined'] = false;
+      return false;
+    }
+  }
+
+  public static function check()
+  {
+    return isset($_SESSION['logined']) && $_SESSION['logined'];
+  }
+
+  public static function logout()
+  {
+    session_destroy();
   }
 }
 
